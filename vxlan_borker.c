@@ -69,6 +69,7 @@ int main() {
 	arp_frm->ptype = htons(2048);
 	arp_frm->hlen = 6;
 	arp_frm->plen = 4;
+	/* 1 for request, 2 for reply, everything else to bork */
 	arp_frm->oper = htons(4);
         for(int i=0;i<6;i++)
 	{
