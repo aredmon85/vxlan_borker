@@ -3,12 +3,10 @@
 #include <unistd.h>
 #include <string.h>
 #include <inttypes.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#include <time.h>
-#define SERVER "200.99.0.130"
+#define TARGET "200.99.0.130"
 int main() {
 	char *datagram;
 	struct sockaddr_in si_other;
@@ -63,38 +61,36 @@ int main() {
 	in_eth->dst_addr[5] = 0xff;
 	in_eth->ether_type = htons(2054);
 
-	printf("Size of inner_eth header: %ld\n",sizeof(struct inner_eth));
 	struct arp_frame *arp_frm = (struct arp_frame *)(datagram + sizeof(struct vxlan_hdr) + sizeof(struct inner_eth));
 	arp_frm->htype = htons(1);
 	arp_frm->ptype = htons(2048);
 	arp_frm->hlen = 6;
 	arp_frm->plen = 4;
 	/* 1 for request, 2 for reply, everything else to bork */
-	arp_frm->oper = htons(4);
+	arp_frm->oper = htons(3);
         for(int i=0;i<6;i++)
 	{
 		arp_frm->sender_hw_addr[i] = in_eth->src_addr[i];
 	}
 	arp_frm->sender_proto_addr = inet_addr("10.100.0.31");
-	printf("Value of sender_proto_addr: %"PRIu32"\n",arp_frm->sender_proto_addr);
-	arp_frm->target_hw_addr[0] = 0;
-        arp_frm->target_hw_addr[1] = 0;
-        arp_frm->target_hw_addr[2] = 0;
-        arp_frm->target_hw_addr[3] = 0;
-        arp_frm->target_hw_addr[4] = 0;
-        arp_frm->target_hw_addr[5] = 0;
+	arp_frm->target_hw_addr[0] = 0x00;
+        arp_frm->target_hw_addr[1] = 0x00;
+        arp_frm->target_hw_addr[2] = 0x00;
+        arp_frm->target_hw_addr[3] = 0x00;
+        arp_frm->target_hw_addr[4] = 0x00;
+        arp_frm->target_hw_addr[5] = 0x00;
 	arp_frm->target_proto_addr = inet_addr("10.100.0.31");
 	uint16_t packet_size = sizeof(struct vxlan_hdr) + sizeof(struct inner_eth) + sizeof(struct arp_frame);
 	if((s=socket(AF_INET, SOCK_DGRAM, 0)) == -1)
 	{
-		perror("failed to create socket");
+		fprintf(stderr, "socket() failed\n");
 		exit(1);
 	}
 	memset((char *) &si_other, 0, sizeof(si_other));
 	si_other.sin_family = AF_INET;
 	int port = 4789;
 	si_other.sin_port = htons(port);
-	if (inet_aton(SERVER , &si_other.sin_addr) == 0)
+	if (inet_aton(TARGET , &si_other.sin_addr) == 0)
 	{
 		fprintf(stderr, "inet_aton() failed\n");
 		exit(1);
